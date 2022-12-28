@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,user-scalable=no">
+    <title>Document</title>
+    <link rel="stylesheet" href="./css/my-css.css">
+    <script src="./js/tools.js"></script>
+    <script src="./js/wei.js"></script>
+    <script>
+        window.onload=function(){
+            document.addEventListener('touchstart',function(ev){
+                ev = ev||event
+                ev.preventDefault()
+            })
+
+            // rem适配
+            ;(function(){
+                var styleNode = document.createElement('style')
+                var w = document.documentElement.clientWidth/16
+                styleNode.innerHTML = 'html{font-size:'+w+'px!important}'
+                document.head.appendChild(styleNode)
+            })()
+
+            // 实现遮罩层弹出
+            CMCFMenuBtn()
+            function CMCFMenuBtn(){
+                var menuBtn = document.querySelector('#wrap .head .head-top .menuBtn')
+                var mask = document.querySelector('#wrap .head .mask')
+                var isOpen = false
+                menuBtn.addEventListener('touchstart',function(ev){
+                    ev = ev ||event
+                    var finger = ev.changedTouches[0]
+                    if(!isOpen){
+                        mask.style.display = 'block'
+                        tools.addClass(menuBtn,'active')
+                    }else if(isOpen){
+                        mask.style.display = 'none'
+                        tools.removeClass(menuBtn,'active')
+                    }
+                    isOpen = !isOpen
+                    ev.stopPropagation()
+                    ev.preventDefault()
+                })
+
+                document.addEventListener('touchstart',function(ev){
+                    mask.style.display = 'none'  
+                    tools.removeClass(menuBtn,'active')
+                    isOpen = false
+                })
+
+                mask.addEventListener('touchstart',function(ev){
+                    ev = ev||event
+                    ev.stopPropagation()
+                })
+            }
+
+            // 导航拖动
+            dragNav()
+            function dragNav(){
+                var listNode = document.querySelector('#wrap .content .damu-nav-drag-wrapper .list')
+                var dragWrapper = document.querySelector('#wrap .content .damu-nav-drag-wrapper')
+                var start = {}
+                var element = {X:0,Y:0}
+                var isHandMove = 0
+
+                // 手指初始的移动距离
+                var pointDis = 0;
+                var lastPoint = 0;
+
+                // 手指初始的时间,pointTime不能设置为0,否则touchend计算速度的时候会有计算错误
+                var pointTime = 1
+                var lastTime = 0
+
+
+                // list能左滑的最小距离
+                var minX = dragWrapper.clientWidth - listNode.offsetWidth
+
+                isX=false
+                isFirst=false
+
+                dragWrapper.addEventListener('touchstart',function(ev){
+                    ev = ev||event
+                    var finger = ev.changedTouches[0]
+                    start = finger
+                    element.X = wei.css(listNode,'translateX')
+                    listNode.style.transition = 'none'
+                    // 一上来就获取初始原点距离
+                    lastPoint = finger.clientX
+                    // 一上来就获取初始时间
+                    var lastTime = new Date().getTime()
+                    // 每一次点击时都重置move的距离，否则会产生记忆，touchend时会有速度
+                    pointDis = 0
+
+                    isX=true
+                    isFirst=true
+                })
+                
+                dragWrapper.addEventListener('touchmove',function(ev){
+                    if(!isX){
+                        return
+                    }
+                    ev = ev||event
+                    var finger = ev.changedTouches[0]
+                    var nowX = finger.clientX
+                    var nowY = finger.clientY
+                    var disX = nowX-start.clientX
+                    var disY = nowY-start.clientY
+                    // 错误写法，elementX不变，disX*scale即为wei.css(listNode,'translateX')的值，
+                    // disX*scale慢慢变小，disX分子和分母同时变大，scale慢慢变大，从1/2向1趋近
+                    // if(wei.css(listNode,'translateX')>0){
+                    //     scale = disX/(disX+wei.css(listNode,'translateX'))
+                    // }else if(wei.css(listNode,'translateX')<minX){
+                    //     scale = disX/(disX+wei.css(listNode,'translateX'))
+                    // }   
+                    // wei.css(listNode,'translateX',disX*scale+elementX)
+                    
+                    /*手动橡皮筋效果
+                    * 
+                    * 在move的过程中，每一次手指touchmove真正的有效距离慢慢变小，元素的滑动距离还是在变大
+                    * 
+                    * pointDis：整个手指touchmove真正的有效距
+                    * 
+                    * translateX = damu.css(item,"translateX") + pointDis*scale;!!!
+                    * 
+                    * */
+
+                    if(isFirst){
+                        isFirst=false
+                        if(Math.abs(disY)>Math.abs(disX)){
+                            isX=false
+                            return
+                        }
+                    }
+                    
+                    // 手指想让list移动的距离
+                    var translateX = disX+element.X
+
+                    // 每一次移动都获取当前手指的位置
+                    var nowPoint = finger.clientX
+                    // 计算出每次手指移动的距离
+                    pointDis = nowPoint - lastPoint
+                    // 计算完后将当前手指点变成lastPoint
+                    lastPoint = nowPoint
+                    
+                    // 获取当前滑屏的时间
+                    var nowTime = new Date().getTime()
+                    // 计算出最后一次滑屏的时间
+                    pointTime = nowTime-lastTime
+                    // 计算完后将当前手指点变成lastPoint
+                    lastTime = nowTime
+
+                    // 如果没有超过，points相关变量就没有用
+                    if(wei.css(listNode,'translateX')>0){
+                        // 超过边界触发橡皮筋效果
+                        isHandMove = true
+                        // 缩放比只有分母上的translateX是变化的，适合做缩放系数
+                        var scale = document.documentElement.clientWidth/((document.documentElement.clientWidth+translateX)*1.5);
+                        // 获取list的之前的偏移量并加上移动距离得到要偏移的距离
+                        translateX = wei.css(listNode,'translateX')+pointDis*scale
+                    }else if(wei.css(listNode,'translateX')<minX){
+                        // 超过边界触发橡皮筋效果
+                        isHandMove = true
+                        // 向左滑到尽头时，translateX是负数，越往左滑越小，scale要变小，所以scale的分母要换
+                        // 用over表示超出最小值的距离，计算出的结果是正数，translateX越小，over越大
+                        var over = minX-translateX
+                        var scale = document.documentElement.clientWidth/((document.documentElement.clientWidth+over)*1.5);
+                        translateX = wei.css(listNode,'translateX')+pointDis*scale
+                    }
+                    wei.css(listNode,'translateX',translateX)
+                })
+
+                dragWrapper.addEventListener('touchend',function(ev){
+                    // 判断是否进入手动橡皮筋效果
+                    if(!isHandMove){
+                        ev = ev||event
+                        var finger = ev.changedTouches[0]
+                        // 计算出瞬时速度
+                        var speed = pointDis/pointTime
+                        // 将速度过滤，太小就不滑动
+                        speed = Math.abs(speed)<0.5?0:speed
+                        // 快速滑动的目标距离
+                        var targetX = wei.css(listNode,'translateX')+speed*200
+                        // 快速滑屏的橡皮筋
+                        var bsr = ''
+                        if(targetX<minX){
+                            targetX = minX
+                            bsr = "cubic-bezier(.26,1.51,.68,1.54)";
+                        }else if(targetX>0){
+                            targetX = 0
+                            bsr = "cubic-bezier(.26,1.51,.68,1.54)";
+                        }
+                        // 这里时间之后必须加空格，否则系统识别不出语句
+                        listNode.style.transition = '1s '+bsr+'transform'
+                        wei.css(listNode,'translateX',targetX)
+                    }else{
+                        if(wei.css(listNode,'translateX')>0){
+                        listNode.style.transition = '1s'
+                        wei.css(listNode,'translateX',0)
+                        }else if(wei.css(listNode,'translateX')<minX){
+                            listNode.style.transition = '1s'
+                            wei.css(listNode,'translateX',minX)
+                        }
+                        isHandMove = false
+                    }
+                })
+
+               
+            
+            }
+            
+            
+            // 导航切换
+            changeNav()
+            function changeNav(){
+                var list = document.querySelector('#wrap .content .damu-nav-drag-wrapper .list')
+                var aNodes= document.querySelectorAll('#wrap .content .damu-nav-drag-wrapper li>a')
+
+                list.addEventListener('touchstart',function(){
+                    this.isMove = false
+                })
+
+                list.addEventListener('touchmove',function(){
+                    this.isMove = true
+                })
+
+                list.addEventListener('touchend',function(ev){
+                    if(this.isMove){
+                        return
+                    }
+                    ev = ev||event
+                    var finger = ev.changedTouches[0]
+                    for(var i=0;i<aNodes.length;i++){
+                        tools.removeClass(aNodes[i],'active')
+                    }
+                    tools.addClass(finger.target,'active')
+                })
+            }
+            
+            // 轮播图
+            arr = ['img/1.jpg','img/2.jpg','img/3.jpg','img/4.jpg','img/5.jpg']
+            wei.carousel(arr)
+
+            // 选项卡拖动
+            dragTap()
+            function dragTap(){
+                
+                var tapWraps = document.querySelector('#wrap .content .tap-wrap')
+                var tapContent = document.querySelectorAll('#wrap .content .tap-wrap .tap-content')
+                var tapLoadings = document.querySelectorAll('#wrap .content .tap-wrap .tap-content .tap-loading')
+                var tapWidth = tapWraps.offsetWidth
+                // 给所有content绑定拖动事件
+                for(var i=0;i<tapContent.length;i++){
+                    move(tapContent[i])
+                }
+                
+                function move(content){
+                    // 绿色下标的初始位置,必须定义在这里，防止不同的content交叉影响
+                    var now = 0
+                    var start = {}
+                    wei.css(content,'translateX',-tapWidth)
+                    var element = {X:0,Y:0}
+                    var smallG = content.parentNode.querySelector(".tap-nav .smallG");
+                    var  aNodes = content.parentNode.querySelectorAll(".tap-nav a");
+                    smallG.style.width=aNodes[0].offsetWidth+"px";
+
+                    isFirst=false
+                    isX=false
+
+                    //在1/2 跳转时  让整个jump逻辑干干净净的只触发一次
+                    var isOver = false
+                    content.addEventListener('touchstart',function(ev){
+                        if(isOver){
+                            return
+                        }
+                        ev = ev||event
+                        var finger = ev.changedTouches[0]
+                        start = finger
+                        element.X = wei.css(content,'translateX')
+                        content.style.transition = 'none'
+
+                        isFirst=true
+                        isX=true
+
+                    })
+                    content.addEventListener('touchmove',function(ev){
+                        if(isOver){
+                            return;
+                        }
+                        if(!isX){
+                            return
+                        }
+                        ev = ev||event
+                        var finger = ev.changedTouches[0]
+                        var nowX = finger.clientX
+                        var nowY = finger.clientY
+                        var disX = nowX - start.clientX
+                        var disY = nowY - start.clientY
+                        if(isFirst){
+                            isFirst=false
+                            if(Math.abs(disY)>Math.abs(disX)){
+                                isX=false
+                                return
+                            }
+                        }
+                        wei.css(content,'translateX',element.X+disX)
+                    })
+                    content.addEventListener('touchend',function(ev){
+                        if(isOver){
+                            return;
+                        }
+                        ev = ev||event
+                        var finger = ev.changedTouches[0]
+                        // 获取手指抬起前的移动距离，方便判断
+                        var nowX = finger.clientX
+                        var disX = nowX - start.clientX
+                        // 如果移动距离小于一半的宽度，返回原状
+                        if(Math.abs(disX)<=tapWidth/2){
+                            content.style.transition = '1s'
+                            wei.css(content,'translateX',-tapWidth)
+                        }
+
+                        jump(disX)
+                    })
+
+                    function jump(disX){
+                        // 在加载的时候停掉所有的监听
+                        if(isOver){
+                            return;
+                        }
+                        // disX>0向右，disX<0向左,只使用一次
+                        if(Math.abs(disX)>(tapWidth/2)){
+                            isOver = true
+                            targetX = disX>0?0:-2*tapWidth
+                            content.style.transition = '1s'
+                            wei.css(content,'translateX',targetX)
+
+                            // 在content完全过去之后开始出现loading图并移动下标
+                            content.addEventListener('transitionend',endCallBack)
+                            // 适配其他浏览器
+                            content.addEventListener('webkitTransitionend',endCallBack)
+
+                            // content.ontransitionend=endCallBack
+
+                            function endCallBack(){
+                                
+                                // 使用addEventListener给元素绑定事件时，可以重复绑定同名的事件，如果在回调函数里没有对事件解绑，
+                                // 则在下一次元素触发transitionend事件时会触发两个事件监听，如果用on绑定事件就不会有这个问题
+                                content.removeEventListener("transitionend",endCallBack);
+								content.removeEventListener("webkitTransitionEnd",endCallBack);
+
+                                content.style.transition = 'none'
+
+                                /*超过 1/2
+									 * 1.一开始loading图是隐藏的,loading图需要出现（ 1/2跳转后  请求发送前）
+									 * 2.发送请求  处理请求  完成数据的渲染
+									 * 		必须动画（content去0 或者 -2w位置）完成之后，再去进行这一系列的逻辑
+									 * 								----   content要回到-w的位置
+									 * */
+                                for(var i=0;i<tapLoadings.length;i++){
+                                    tapLoadings[i].style.opacity = 1;
+                                }
+
+                                //对now进行控制
+                                //往右滑 --   往左滑++
+                                disX>0?now--:now++;
+                                if(now<0){
+                                    now = aNodes.length-1;
+                                }else if(now>aNodes.length-1){
+                                    now = 0;
+                                }
+
+                                wei.css(smallG,"translateX",aNodes[now].offsetLeft);
+
+                                // 在宽度不一样的时候才调整小绿的宽度，减少重绘重排
+                                if(aNodes[now].offsetWidth != smallG.offsetWidth){
+										smallG.style.width=aNodes[now].offsetWidth+"px";
+								}
+
+
+                                //发ajax请求  去服务端拿数据（学完node之后来发一发）
+                                setTimeout(function(){
+                                    wei.css(content,'translateX',-tapWidth)
+                                    //成功  content要回到-w的位置  loading图隐藏
+										
+                                    for(var i=0;i<tapLoadings.length;i++){
+                                        tapLoadings[i].style.opacity = 0;
+                                    }
+                                    //最后一步
+                                    isOver = false
+                                },2000)
+                            }
+                        }
+                    }
+                }
+                
+            }
+            
+            
+            // 竖向滚动
+            vMove()
+            function vMove(){
+                var Content= document.querySelector('#wrap .content')
+                var scrollBar = document.querySelector('#wrap .scrollBar')
+                var head = document.querySelector('#wrap .head')
+                var Div = document.querySelector('#wrap .content').children[0]
+                var headBottom = document.querySelector("#wrap .head .head-bottom");
+                var h = head.offsetHeight;
+                // 无效代码
+                // var scale = document.documentElement.clientHeight/(head.offsetHeight+Div.offsetHeight)
+                // scrollBar.style.height = document.documentElement.clientHeight*scale + 'px'
+                var scale = 0
+                var callback={
+                    start:function(){
+                        // 在点击的时候重新获取才能得到Div.offsetHeight的正确高度
+                        scale = document.documentElement.clientHeight/(head.offsetHeight+Div.offsetHeight)
+                        scrollBar.style.height = document.documentElement.clientHeight*scale + 'px'
+                        scrollBar.style.opacity = '1'
+                        scrollBar.style.transition='1s opacity'
+                    },
+                    move:function(){
+                        // 包含块移动的距离和滚动条移动的距离成比
+                        var disY = wei.css(this,'translateY')
+                        var targetY = disY*scale
+                        wei.css(scrollBar,'translateY',-targetY)
+                        // 滚动条移动超过头部高度自动隐藏搜索框
+                        if(wei.css(scrollBar,"translateY")>h){
+							headBottom.style.display="none";
+							flag = false;
+						}else if(wei.css(scrollBar,"translateY")<h){
+							headBottom.style.display="block";
+							flag = true;
+						}
+                    },
+                    autoMove:function(time){
+                        var disY = wei.css(this,'translateY')
+                        var targetY = disY*scale
+                        wei.css(scrollBar,'translateY',-targetY)
+                    },
+                    end:function(time){
+                        scrollBar.style.opacity = '0'
+                        scrollBar.style.transition=time+'s'
+                    }
+                }
+
+                wei.vMove(Content,callback)
+            }
+
+
+
+        }
+    </script>
+</head>
+<body>
+	<div id="wrap">
+        <div class="scrollBar"></div>
+		<div class="head">
+			<div class="head-top">
+                <!-- logo -->
+                <h1 class="logo">
+                    <a href="http://www.atguigu.com">
+                        <img src="img/logo.png" />
+                    </a>
+                </h1>
+                <!-- 面包屑导航 -->
+                <a href="javascript:;" class="menuBtn"></a>
+                <!-- 按钮排 -->
+                <div class="btns">
+                    <a href="http://www.baidu.com" class="search">搜索</a>
+                    <a href="javascript:;">登录</a>
+                    <a href="javascript:;">注册</a>
+                </div>
+            </div>
+            <div class="head-bottom">
+                <form  method="post">
+                    <input type="text" placeholder="请碰我一下" />
+                    <input type="submit" value="搜索"/>
+                </form>
+            </div>
+            <ul class="mask">
+                <li>
+                    <a href="http://www.baidu.com">首页</a>
+                </li>
+                <li>
+                    <a href="javascript:;">MV</a>
+                </li>
+                <li>
+                    <a href="javascript:;">悦单</a>
+                </li>
+                <li>
+                    <a href="javascript:;">V榜</a>
+                </li>
+                <li>
+                    <a href="javascript:;">音乐</a>
+                </li>
+                <li>
+                    <a href="javascript:;">商城</a>
+                </li>
+                <li>
+                    <a href="javascript:;">节目</a>
+                </li>
+                <li>
+                    <a href="javascript:;">饭团</a>
+                </li>
+                <li>
+                    <a href="javascript:;">咨询</a>
+                </li>
+                <li>
+                    <a href="javascript:;">我的家</a>
+                </li>
+                <li>
+                    <a href="javascript:;">APP下载</a>
+                </li>
+                <li>
+                    <a href="javascript:;">热门应用</a>
+                </li>
+            </ul>
+        </div>
+        <div class="content">
+            <div>
+                <!--导航-->
+                <div class="damu-nav-drag-wrapper">
+                    <ul class="list">
+                        <li>
+                            <a href="http://www.baidu.com" class="active">首页</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">MV</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">悦单</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">V榜</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">音乐</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">商城</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">节目</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">饭团</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">咨询</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">我的家</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">APP下载</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">热门应用</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">晓飞张</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">金龙油</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">邱海峰</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">小贱贱</a>
+                        </li>
+                        <li>
+                            <a href="javascript:;">你</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="carousel-wrap" needAuto needCarousel>
+                    <div class="points-wrap"></div>
+                </div>
+                <div class="tap-wrap">
+                    <div class="tap-head">
+                        <h2>MV主播</h2>
+                        <span>更多&gt</span>
+                    </div>
+                    <div class="tap-nav">
+                        <a href="javascript:;">全部</a>
+                        <a href="javascript:;">内地</a>
+                        <a href="javascript:;">刚果人民共和国</a>
+                        <a href="javascript:;">欧美</a>
+                        <a href="javascript:;">韩国</a>
+                        <a href="javascript:;">日本</a>
+                        <div class="smallG"></div>
+                    </div>
+                    <div class="tap-content">
+                        <!-- 主页面两边都有加载图 -->
+                        <ul class="tap-loading"></ul>
+                        <ul>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/a.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/b.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/c.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/d.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/e.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/f.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                        <ul class="tap-loading"></ul>
+                    </div>
+                </div>
+                <div class="tap-wrap">
+                    <div class="tap-head">
+                        <h2>MV主播</h2>
+                        <span>更多&gt</span>
+                    </div>
+                    <div class="tap-nav">
+                        <a href="javascript:;">全部</a>
+                        <a href="javascript:;">内地</a>
+                        <a href="javascript:;">刚果人民共和国</a>
+                        <a href="javascript:;">欧美</a>
+                        <a href="javascript:;">韩国</a>
+                        <a href="javascript:;">日本</a>
+                        <div class="smallG"></div>
+                    </div>
+                    <div class="tap-content">
+                        <!-- 主页面两边都有加载图 -->
+                        <ul class="tap-loading"></ul>
+                        <ul>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/a.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/b.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/c.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/d.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/e.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/f.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                        <ul class="tap-loading"></ul>
+                    </div>
+                </div>
+                <div class="tap-wrap">
+                    <div class="tap-head">
+                        <h2>MV主播</h2>
+                        <span>更多&gt</span>
+                    </div>
+                    <div class="tap-nav">
+                        <a href="javascript:;">全部</a>
+                        <a href="javascript:;">内地</a>
+                        <a href="javascript:;">刚果人民共和国</a>
+                        <a href="javascript:;">欧美</a>
+                        <a href="javascript:;">韩国</a>
+                        <a href="javascript:;">日本</a>
+                        <div class="smallG"></div>
+                    </div>
+                    <div class="tap-content">
+                        <!-- 主页面两边都有加载图 -->
+                        <ul class="tap-loading"></ul>
+                        <ul>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/a.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/b.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/c.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/d.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/e.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/f.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                        <ul class="tap-loading"></ul>
+                    </div>
+                </div>
+                <div class="tap-wrap">
+                    <div class="tap-head">
+                        <h2>MV主播</h2>
+                        <span>更多&gt</span>
+                    </div>
+                    <div class="tap-nav">
+                        <a href="javascript:;">全部</a>
+                        <a href="javascript:;">内地</a>
+                        <a href="javascript:;">刚果人民共和国</a>
+                        <a href="javascript:;">欧美</a>
+                        <a href="javascript:;">韩国</a>
+                        <a href="javascript:;">日本</a>
+                        <div class="smallG"></div>
+                    </div>
+                    <div class="tap-content">
+                        <!-- 主页面两边都有加载图 -->
+                        <ul class="tap-loading"></ul>
+                        <ul>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/a.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/b.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/c.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/d.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/e.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a href="javascript:;">
+                                    <img src="img/f.jpg"/>
+                                    <span>君に贈る花がないがないがないがないがないがないがない</span>
+                                </a>
+                                <div class="tap-discuss">
+                                    <div class="right">
+                                        <span></span>
+                                        <span>9176</span>
+                                    </div>
+                                    <div class="left">
+                                        <span></span>
+                                        <span>6</span>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                        <ul class="tap-loading"></ul>
+                    </div>
+                </div>
+                <div class="tap-wrap">
+                <div class="tap-head">
+                    <h2>MV主播</h2>
+                    <span>更多&gt</span>
+                </div>
+                <div class="tap-nav">
+                    <a href="javascript:;">全部</a>
+                    <a href="javascript:;">内地</a>
+                    <a href="javascript:;">刚果人民共和国</a>
+                    <a href="javascript:;">欧美</a>
+                    <a href="javascript:;">韩国</a>
+                    <a href="javascript:;">日本</a>
+                    <div class="smallG"></div>
+                </div>
+                <div class="tap-content">
+                    <!-- 主页面两边都有加载图 -->
+                    <ul class="tap-loading"></ul>
+                    <ul>
+                        <li>
+                            <a href="javascript:;">
+                                <img src="img/a.jpg"/>
+                                <span>君に贈る花がないがないがないがないがないがないがない</span>
+                            </a>
+                            <div class="tap-discuss">
+                                <div class="right">
+                                    <span></span>
+                                    <span>9176</span>
+                                </div>
+                                <div class="left">
+                                    <span></span>
+                                    <span>6</span>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="javascript:;">
+                                <img src="img/b.jpg"/>
+                                <span>君に贈る花がないがないがないがないがないがないがない</span>
+                            </a>
+                            <div class="tap-discuss">
+                                <div class="right">
+                                    <span></span>
+                                    <span>9176</span>
+                                </div>
+                                <div class="left">
+                                    <span></span>
+                                    <span>6</span>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="javascript:;">
+                                <img src="img/c.jpg"/>
+                                <span>君に贈る花がないがないがないがないがないがないがない</span>
+                            </a>
+                            <div class="tap-discuss">
+                                <div class="right">
+                                    <span></span>
+                                    <span>9176</span>
+                                </div>
+                                <div class="left">
+                                    <span></span>
+                                    <span>6</span>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="javascript:;">
+                                <img src="img/d.jpg"/>
+                                <span>君に贈る花がないがないがないがないがないがないがない</span>
+                            </a>
+                            <div class="tap-discuss">
+                                <div class="right">
+                                    <span></span>
+                                    <span>9176</span>
+                                </div>
+                                <div class="left">
+                                    <span></span>
+                                    <span>6</span>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="javascript:;">
+                                <img src="img/e.jpg"/>
+                                <span>君に贈る花がないがないがないがないがないがないがない</span>
+                            </a>
+                            <div class="tap-discuss">
+                                <div class="right">
+                                    <span></span>
+                                    <span>9176</span>
+                                </div>
+                                <div class="left">
+                                    <span></span>
+                                    <span>6</span>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="javascript:;">
+                                <img src="img/f.jpg"/>
+                                <span>君に贈る花がないがないがないがないがないがないがない</span>
+                            </a>
+                            <div class="tap-discuss">
+                                <div class="right">
+                                    <span></span>
+                                    <span>9176</span>
+                                </div>
+                                <div class="left">
+                                    <span></span>
+                                    <span>6</span>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                    <ul class="tap-loading"></ul>
+                </div>
+            </div>
+        </div>
+	</div>
+</body>
+</html>

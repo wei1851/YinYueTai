@@ -1,0 +1,401 @@
+// ###总的设计图宽为1080,将设计图等比缩放。1位图像素必须对应1物理像素
+// 移动端显示的元素的css像素/移动端布局视口宽度 = 设计图元素的css像素/设计图布局视口宽度（假设有一个设备1css像素对应1物理像素，则布局视口宽为1080px）
+// x/document.documentElement.clientWidth = 设计图元素的css像素(给定)/1080,document.documentElement.clientWidth=16*rem
+// 则x = 设计图元素的css像素(给定)*16*rem/1080
+
+
+// 重置默认样式
+html,body,ul,li,h1,h2,h3,h4,span,div,p,a,form,input{margin: 0;padding: 0;font-family: helvetica;}
+html,body{height: 100%;overflow: hidden;}
+ul{list-style: none;}
+a{text-decoration: none;display: block}
+// -webkit-tap-highlight-color去掉点击后的高亮,outline: none去掉input自动聚焦，-webkit-appearance: none去掉input的默认样式
+a,input,button{-webkit-tap-highlight-color: rgba(0,0,0,0);
+                -webkit-appearance: none;outline: none;border: none;}
+img{display: block}
+.carousel-wrap > .list > li{float: left;}
+
+@myrem:16rem/1080;
+@import url(./mixin/one-px.less);
+@import url(./components/carousel.less);
+@import url(./extends/clearfix.less);
+// ###06_音乐台项目
+// 	整个页面背景色:#eee;
+#wrap{
+    background-color: #eee;
+    font-size: (16*@myrem);
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+        .head{
+            position: absolute;
+            width: 100%;
+            background: #232323;
+            z-index: 8;
+            .head-top{
+                //头部上半部分高度:135
+                height: (135*@myrem);
+                
+                .logo{
+                    float: left;
+                    padding: (26*@myrem) (17*@myrem) (21*@myrem);
+                    img{
+
+                        // logo部分:
+                        // log 图片大小:240px * 88px
+                        // log 左右内边距:17px
+                        //     上内边距:26px
+                        //     下内边距:21px
+                        width: (240*@myrem);
+                        height: (88*@myrem);
+                    }
+                }
+                .menuBtn{
+                    // 	菜单按钮:
+                    // 		菜单元素    129 * 135
+                    // 		菜单按钮    雪碧图大小:82 * 233
+                    // 		背景图偏移位置(关闭): center 16
+                    // 		背景图偏移位置(开启): center -120 
+                    width: (129*@myrem);
+                    height: (135*@myrem);
+                    float: left;
+                    background: url(../img/menuBtn.png) no-repeat;
+                    background-position: center (16*@myrem);
+                    background-size: (82*@myrem) (233*@myrem);
+                    &.active{
+                        background-position: center (-120*@myrem);
+                    }
+                }
+                 // 	按钮容器:
+                // 		上内边距   21
+                .btns{
+                    padding-top: (21*@myrem);
+                    float: right;
+                    a{
+                    // 	登录/注册按钮:(注意内联元素,需要浮动)
+                    // 		按钮大小: 111 * 78
+                    // 		行高:78
+                    // 		背景色 :  #690
+                    // 		字体颜色: #ccc
+                    // 		右外边距: 15px
+                    // 		字体大小: 42
+                    // 		文本居中
+                    // 		圆角:8  
+                    float: left;
+                    width: (111*@myrem);
+                    height: (78*@myrem);
+                    line-height: (78*@myrem);
+                    color: #ccc;
+                    background-color: #690;
+                    margin-right: (15*@myrem);
+                    font-size: (42*@myrem);
+                    text-align: center;
+                    border-radius: (8*@myrem);
+                        &.search{
+                            // 	小搜索按钮:
+                            // 		按钮大小: 130 * 88
+                            // 		行高:88
+                            // 		字体颜色: #fff
+                            // 		右外边距: 30px
+                            // 		上外边距: 3px
+                            // 		字体加粗
+                            // 		圆角:10
+                            width: (130*@myrem);
+                            height: (88*@myrem);
+                            line-height: (88*@myrem);
+                            color: #fff;
+                            margin-top: (3*@myrem);
+                            margin-right: (30*@myrem);
+                            font-weight: bold;
+                            border-radius: (10*@myrem);
+                        }
+                    }
+                }
+            }
+            .head-bottom{
+                // 搜索区:
+                // 	高	:103;
+                // 	上下左右内边距:16;
+                height: (103*@myrem);
+                padding: (16*@myrem);
+                form{
+                    height: 100%;
+                    input[type='text']{
+                        // 输入框:怪异盒模型(注意boxsizing!!!)
+                        // 	宽(总): 829
+                        // 	高(总): 103
+                        // 	背景色: #999;
+                        // 	上下内边距: 5
+                        // 	左右内边距: 10
+                        // 	边框: 1px solid #5a5a5a;(input输入框我们一般都会加1px边框)
+                        // 	字体大小 : 41
+                        // 	字体颜色: #333
+                        // 	圆角:15
+                        box-sizing: border-box;
+                        float: left;
+                        width: (829*@myrem);
+                        height: (103*@myrem);
+                        background-color: #999999;
+                        padding: (5*@myrem) (10*@myrem);
+                        border: (1*@myrem) solid #5a5a5a;
+                        font-size: (41*@myrem);
+                        // input里的字体颜色需要这样设置
+                        &::-webkit-input-placeholder{
+                            color: #333333;
+                        }
+                        border-radius: (15*@myrem) 0 0 (15*@myrem);
+                        &:focus{
+                            background-color: #fff;
+                        }
+                    }
+                    input[type='submit']{
+                        // 大搜索按钮
+                        // 	 宽: 203
+                        // 	 高: 103
+                        // 	 边框:清除边框
+                        // 	 背景颜色: #414040;
+                        // 字体颜色: #fff;
+                        // 字体大小 : 41
+                        // 圆角: 15;
+                        float: right;
+                        width: (203*@myrem);
+                        height: (103*@myrem);
+                        border: none;
+                        background-color: #414040; 
+                        color: #fff;
+                        font-size: (41*@myrem);
+                        border-radius: 0 (15*@myrem) (15*@myrem) 0;
+                    }
+                }
+            }
+            .mask{
+                // 定位层:
+                // 	宽度		 :100%
+                // 	绝对定位top : 135
+                // 	上下内边距	  : 10
+                // 	上边框: 1px solid #6a6a6a 
+                // 	背景颜色:rgba(0, 0, 0, .8)
+                display: none;
+                width: 100%;
+                position: absolute;
+                top: (135*@myrem);
+                padding: (10*@myrem) 0;
+                border-top: (1*@myrem) solid #6a6a6a;
+                background-color: rgba(0, 0, 0, .8);
+                li{
+                    // 定位层元素:
+                    // 	宽度	: 22.5%
+                    // 	高度:135
+                    // 	行高:135
+                    // 	字体大小:54
+                    // 	文本居中
+                    float: left;
+                    width: 22.5%;
+                    height: (135*@myrem);
+                    line-height: (135*@myrem);
+                    font-size: (55*@myrem);
+                    text-align: center;
+                    a{
+                        color: #fff;
+                    }
+                }
+            }
+        }
+        .content{
+            //         ###06_音乐台项目
+            // 整个内容区: 270px 的头部空隙
+            background: #EEEEEE;
+            position: absolute;
+            top: (270*@myrem);
+            bottom: 0;
+            left: 0;
+            right: 0;
+            .damu-nav-drag-wrapper{
+                box-sizing: border-box;
+                height: (177*@myrem);
+                overflow: hidden;
+                width: 100%;
+                padding: (31*@myrem) 0 (14*@myrem) 0;
+                .one-px(@color:black);
+                .list{
+                    // 导航: 高度+纵向padding+border 177(box-sizing)
+                    //         border: 1
+                    //         padding:上 31
+                    //                 下 14
+                    // 去除空格
+                    font-size: 0;
+                    // 不换行，让子元素撑开宽度
+                    white-space: nowrap;
+                    // display: flex;弹性盒不适用
+                    float: left;
+                    .active{
+                        background-color: #690;
+                        color: #fff;
+                    }
+                    li{
+                        // 导航元素: 高:129
+                        //         左右内边距:38
+                        //     默认字体颜色: #020202;
+                        //     选中时背景颜色: #690;
+                        //     选中时字体颜色: #fff;
+                        height: (129*@myrem);
+                        line-height: (129*@myrem);
+                        font-size: 1rem;
+                        // flex-shrink: 0;
+                        display: inline-block;
+                        a{
+                            color: #000;
+                            height: 100%;
+                            padding:0 (38*@myrem);
+                            .active{
+                                background-color: #690;
+                                color: #fff;
+                            }
+                        }
+                    }
+                }
+            }
+            .tap-wrap{
+                //  选项卡整体宽度:1046px
+                // 	背景色:#fff
+                // 	居中
+                width: (1046*@myrem);
+                background-color: #fff;
+                margin: 0 auto;
+                overflow: hidden;
+                .tap-head{
+                    // 头部高度:135
+                    // 头部行高：135
+                    height: (135*@myrem);
+                    line-height: (135*@myrem);
+                    h2{
+                        float: left;
+                        font-size: 1rem;
+                    }
+                    span{
+                        float: right;
+                        font-size: .8rem;
+                    }
+                }
+                .tap-nav{
+                    // 导航行高:105
+                    // 导航高度:105
+                    height: (105*@myrem);
+                    line-height: (105*@myrem);
+                    position: relative;
+                    a{
+                        // 导航元素高度:105
+                        // 	宽度:120
+                        // 	字体大小:44
+                        // 	文本居中
+                        // 	字体颜色:#6b6b6b;
+                        float: left;
+                        height: (105*@myrem);
+                        margin-right: (20*@myrem);
+                        font-size: (44*@myrem);
+                        text-align: center;
+                        color: #6b6b6b;
+                    }
+                    .smallG{
+                        // 底部标识:
+                        // 	宽: 120;
+                        //  高: 9px;
+                        //  背景颜色: #6f900d;
+                        position: absolute;
+                        bottom: (10*@myrem);
+                        left: 0;
+                        height: (9*@myrem);
+                        background-color: #6f900d;
+                        transition:1s transform,1s width;
+                    }
+                }
+                .tap-content{
+                    // 三个ul
+                    width: 300%;
+                    // 继承clearfix所有状态,清除浮动
+                    &:extend(.clearfix all);
+                    ul{
+                        &:extend(.clearfix all);
+                        float: left;
+                        width: 33.3333%;
+                        li{
+                            // 主体内容元素:
+                            // 	box-sizing: border-box;
+                            // 	宽:506
+                            // 	外边距:8
+                            // 	内边距:5
+                            // 	字体大小:40
+                            // 	背景颜色:#efefef
+                            // 	字体颜色:#000
+                            box-sizing: border-box;
+                            margin: (8*@myrem);
+                            padding: (5*@myrem);
+                            width: (506*@myrem);
+                            float: left;
+                            overflow: hidden;
+                            font-size: (40*@myrem);
+                            background-color: #efefef;
+                            color: #000;
+                            a{
+                                img{
+                                    width: 100%;
+                                }
+                                span{
+                                    display: block;
+                                    overflow: hidden;
+                                    white-space: nowrap;
+                                    text-overflow: ellipsis;
+                                    color: #605e5e;
+                                }
+                            }
+                            .tap-discuss{
+                                .left{
+                                    float: left;
+                                    span:nth-child(1){
+                                        display: inline-block;
+                                        width: .5rem;
+                                        height:.5rem;
+                                        background: url(../img/ice.png) no-repeat;
+                                        background-position: 0 -0.8rem;
+                                    }
+                                }
+                                .right{
+                                    float: left;
+                                    margin-right: (30*@myrem);
+                                    vertical-align: middle;
+                                    span:nth-child(1){
+                                        display: inline-block;
+                                        width: .5rem;
+                                        height: .5rem;
+                                        background: url(../img/ice.png) no-repeat;
+                                    }
+                                }
+                            }
+                            
+                           
+                        }
+                    }
+                    .tap-loading{
+                        // loading:
+                        // 	高度:101
+                        // 	透明度:0
+                        background: url(../img/loading.gif) no-repeat;
+                        background-position: center;
+                        height: 10rem;
+                        opacity: 0;
+                    }
+                }
+            }
+            
+        }
+        .scrollBar{
+            position: absolute;
+            top: 0;
+            right: 0;
+            height: 100%;
+            background-color: deeppink;
+            width: 4px;
+            z-index: 9;
+            opacity: 0;
+        }
+    }
