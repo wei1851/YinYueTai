@@ -73,6 +73,7 @@
             for(var i=0;i<arr.length;i++){
                 ulNode.innerHTML+='<li><a href="javascript:;"><img src='+arr[i]+'></a></li>'
             }
+            console.log(Date.now()+'-1')
             // 将list的样式表插入head中
             var styleNode = document.createElement('style')
             styleNode.innerHTML='.carousel-wrap>.list>li{width:'+(1/arr.length*100)+'%}.carousel-wrap>.list{width:'+(arr.length*100)+'%}'
@@ -96,7 +97,12 @@
             // 设置carouselWrap的高度为img的高度，避免高度塌陷
             var imgNodes = document.querySelector(".carousel-wrap > .list > li > a >img");
             setTimeout(function(){
+                /**再js代码里创建img标签并请求图片资源并不会马上获取到图片，而是一定时间之后图片才会传输过来,
+                所以依据图片高度生成的DOM元素的高度一开始不存在，图片传过来之后才会重排重绘。所以要等待一定时间后再
+                设置轮播图容器的高度，这个等待时间不能小于图片传输的时间，在这里图片传输时间为25ms，
+                例如设置20就会小于图片传输的时间，高度设置不生效*/
                 carouselWrap.style.height=imgNodes.offsetHeight+"px";
+                console.log(Date.now()+'-2')
             },100)
 
             // 滑屏原理：通过获取手指在carouselWrap上移动的距离，将其赋给ul，作为它的移动距离
@@ -264,6 +270,7 @@
         // item能上滑的最远距离
         // 刚开始轮播图还没有渲染出来，所以item.offsetHeight的值会变小，需要在渲染完成后重新获取最远距离
         var minY = wrap.clientHeight - item.offsetHeight
+        console.log(Date.now()+'-3')
 
         //即点即停
 		var cleartime =0;
